@@ -35,6 +35,11 @@
 
 #include "u8g2.h"
 
+/* External font support */
+#ifdef U8G2_WITH_EXTERNAL_FONT
+#include "u8g2_ext_font.h"
+#endif
+
 /* size of the font data structure, there is no struct or class... */
 /* this is the size for the new font format */
 #define U8G2_FONT_DATA_STRUCT_SIZE 23
@@ -781,6 +786,14 @@ int8_t u8g2_font_2x_decode_glyph(u8g2_t *u8g2, const uint8_t *glyph_data)
 */
 const uint8_t *u8g2_font_get_glyph_data(u8g2_t *u8g2, uint16_t encoding)
 {
+#ifdef U8G2_WITH_EXTERNAL_FONT
+  /* Check if external font mode is active */
+  if (u8g2->font == U8G2_EXTERNAL_FONT_MARKER)
+  {
+    return u8g2_ext_font_get_glyph_data(u8g2, encoding);
+  }
+#endif
+
   const uint8_t *font = u8g2->font;
   font += U8G2_FONT_DATA_STRUCT_SIZE;
 
