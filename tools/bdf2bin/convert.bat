@@ -1,0 +1,1 @@
+python ./bdf2bin.py ./wenquanyi_13px.bdf -n myfont2 -o ./myfont2.bin -m "./gb2312.map"

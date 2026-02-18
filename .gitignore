@@ -2,3 +2,5 @@
 u8g2_sdl*
 *.bin
 *.map
+*.bdf
+tools/bdf2bin/*.c
