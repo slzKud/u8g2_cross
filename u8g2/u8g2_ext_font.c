@@ -305,7 +305,7 @@ const uint8_t *u8g2_LoadGlyphFromFile(u8g2_t *u8g2, uint16_t encoding)
         {
             uint16_t current_encoding;
             uint8_t glyph_size;
-
+            
             /* Read encoding (2 bytes) and glyph size (1 byte) */
             if (!ext_font_read_data(u8g2, current_offset, ctx->glyph_buffer, 3))
                 break;
@@ -313,10 +313,15 @@ const uint8_t *u8g2_LoadGlyphFromFile(u8g2_t *u8g2, uint16_t encoding)
             current_encoding = (ctx->glyph_buffer[0] << 8) | ctx->glyph_buffer[1];
             glyph_size = ctx->glyph_buffer[2];
 
+            if(glyph_size==0xff && current_encoding==0x4){
+                current_offset += 4; // skip edge protect bytes:0x00 0x04 0xff 0xff
+                continue;
+            }
+
             /* Check for end marker (current_encoding == 0) */
             if (current_encoding == 0)
                 break;
-
+                
             /* Check if this is the glyph we're looking for */
             if (current_encoding == encoding)
             {
