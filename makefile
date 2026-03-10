@@ -6,8 +6,8 @@ CFLAGS = -g -Wall -DU8G2_WITH_EXTERNAL_FONT
 LIBSDL = -lSDL2main -lSDL2
 LDFLAGS = -pthread
 # 分别处理 C 和 C++ 源文件
-C_SRC = $(shell ls ./u8g2/*.c)
-CPP_SRC = main.cpp
+C_SRC = $(shell ls ./u8g2/*.c) 
+CPP_SRC = main.cpp parser/parser.cpp
 C_OBJ = $(C_SRC:.c=.o)
 CPP_OBJ = $(CPP_SRC:.cpp=.o)
 OBJ = $(C_OBJ) $(CPP_OBJ)

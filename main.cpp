@@ -5,18 +5,41 @@
 #include <cstdio>
 #include <iostream>
 
+#include "parser/parser.h"
+
 /* External font support */
 #include "u8g2/u8g2_ext_font.h"
 
-u8g2_t u8g2;
 
+
+u8g2_t u8g2;
+uint8_t current_font_index = 0x0;
+uint32_t font_offset = 0x0;
+uint32_t max_size = 0x04cd;
 uint32_t sd_card_read_cb(void *user_ptr, uint32_t offset,
                         uint8_t *buffer, uint32_t count)
 {
+    
     /* user_ptr could be a file handle or SD card context */
     FILE *font_file = (FILE *)user_ptr;
 
-    fseek(font_file, offset, SEEK_SET);
+    
+    if(max_size>0){
+      if (offset >= max_size){
+        //printf("max_size!!:%x,%x,%d\n",offset + font_offset,offset,count);
+        return 0;
+      }
+
+      if (offset + count > max_size){
+        //printf("max_size 1!!:%x,%x,%d\n",offset + font_offset,offset,count);
+        count = max_size - offset;
+      }
+    }
+    /*
+    printf("sd_card_read_cb:%x,%x,%d\n",offset + font_offset,offset,count);
+    fseek(font_file, offset + font_offset,SEEK_SET);
+    */
+    fseek(font_file, offset,SEEK_SET);
     return fread(buffer, 1, count, font_file);
 }
 
@@ -48,7 +71,16 @@ int main(void)
   int k;
   int i;
   FILE *font_file;
-  font_file = fopen("myfont2.bin", "rb");
+  FontInfo *fonts = NULL;
+  uint8_t font_count = 0;
+  TextInfo *texts = NULL;
+  uint8_t text_count = 0;
+  if (parse_packet_file("./example_packets.bin", &fonts, &font_count, &texts, &text_count) != 0) {
+        fprintf(stderr, "Failed to parse file\n");
+        return 1;
+  }
+  //font_file = fopen("./myfont2_lite3.bin", "rb");
+  font_file = fopen("./example_packets.bin", "rb");
   #ifdef SDL2
   u8g2_SetupBuffer_SDL_128x64_4(&u8g2, &u8g2_cb_r0);
   #endif
@@ -72,18 +104,23 @@ int main(void)
   /* Demo: Using external font support */
   if(font_file!=NULL){
     std::cout << "Initializing external font..." << std::endl;
-
-    if (u8g2_InitExternalFont(&u8g2, (void *)font_file, sd_card_read_cb)) {
-        if (u8g2_SetExternalFont(&u8g2, 0)) {
-            std::cout << "External font loaded successfully" << std::endl;
-        } else {
-            std::cout << "Failed to set external font, using internal font" << std::endl;
-            u8g2_SetFont(&u8g2, u8g2_font_6x13_tf);
-        }
-    } else {
-        std::cout << "Failed to initialize external font, using internal font" << std::endl;
-        u8g2_SetFont(&u8g2, u8g2_font_6x13_tf);
-    }
+    if(font_count>=0){
+      font_offset=fonts[0].offset+7;
+      max_size=font_offset+fonts[0].count;
+      if (u8g2_InitExternalFont(&u8g2, (void *)font_file, sd_card_read_cb)) {
+          if (u8g2_SetExternalFont(&u8g2, font_offset)) {
+              std::cout << "External font loaded successfully" << std::endl;
+          } else {
+              std::cout << "Failed to set external font, using internal font" << std::endl;
+              u8g2_SetFont(&u8g2, u8g2_font_6x13_tf);
+          }
+      } else {
+          std::cout << "Failed to initialize external font, using internal font" << std::endl;
+          u8g2_SetFont(&u8g2, u8g2_font_6x13_tf);
+      }
+   }else{
+    u8g2_SetFont(&u8g2, u8g2_font_6x13_tf);
+   }
   }else{
     u8g2_SetFont(&u8g2, u8g2_font_6x13_tf);
   }
@@ -96,7 +133,17 @@ int main(void)
     i = 0;
     do
     {
-      u8g2_DrawUTF8(&u8g2, 2, 28, font_file!=NULL?"Hello,Ext Font.":"Hello,inside Font.");
+      for (int i = 0; i < text_count; i++) {
+        if(text_count>0 && texts[i].style_font != current_font_index){
+          font_offset=fonts[(texts[i].style_font & 0xF)-1].offset+7;
+          max_size = font_offset+fonts[(texts[i].style_font & 0xF)-1].count;
+          current_font_index=(texts[i].style_font & 0xF);
+          u8g2_SetExternalFont(&u8g2, font_offset);
+          printf("current_font_index=%x,font_offset=%x,max_size=%x\n",current_font_index,font_offset,max_size);
+        }
+        u8g2_DrawUTF8(&u8g2, texts[i].x, texts[i].y, texts[i].text);
+      }
+      //u8g2_DrawUTF8(&u8g2, 2, 28, "你好, u8g2!");
       i++;
 
     } while (u8g2_NextPage(&u8g2));
@@ -135,6 +182,12 @@ int main(void)
     u8g2_CleanupExternalFont(&u8g2);
     fclose(font_file);
   }
+  // 释放内存
+  for (int i = 0; i < text_count; i++) {
+    free(texts[i].text);
+  }
+  free(texts);
+  free(fonts);
   return 0;
 }
 
