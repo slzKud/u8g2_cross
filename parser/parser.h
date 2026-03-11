@@ -1,6 +1,6 @@
 #ifndef PARSER_H
 #define PARSER_H
-//#define USE_LITE_PARSER
+#define USE_LITE_PARSER
 #include <stdint.h>
 
 // 字体信息结构体

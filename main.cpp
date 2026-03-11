@@ -76,12 +76,17 @@ int main(int argc,char** argv)
   TextInfo *texts = NULL;
   uint8_t text_count = 0;
   if(argc>=2){
-    if (parse_packet_file(argv[1], &fonts, &font_count, &texts, &text_count) != 0) {
-          std::cout << "failed to parse file" << std::endl;
-          return 1;
-    }
-    //font_file = fopen("./myfont2_lite3.bin", "rb");
     font_file = fopen(argv[1], "rb");
+    if(font_file==NULL)
+    {
+      std::cout << "failed to parse file" << std::endl;
+      return 1;
+    }
+    max_size = 0;
+    if (parse_packet_file_lite((void *)font_file,sd_card_read_cb, &fonts, &font_count, &texts, &text_count) != 0) {
+      std::cout << "failed to parse file" << std::endl;
+      return 1;
+    }  
   }else{
     std::cout << "unable to load program,use example." << std::endl;
   }
