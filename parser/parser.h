@@ -1,6 +1,6 @@
 #ifndef PARSER_H
 #define PARSER_H
-
+//#define USE_LITE_PARSER
 #include <stdint.h>
 
 // 字体信息结构体
@@ -18,7 +18,7 @@ typedef struct {
     uint8_t y;
     char *text;          // UTF-8字符串，以'\0'结尾
 } TextInfo;
-
+#ifndef USE_LITE_PARSER
 // 解析函数
 // 输入: filename 文件名
 // 输出: fonts 指向字体数组的指针（动态分配，由调用者free）
@@ -28,5 +28,9 @@ typedef struct {
 // 返回值: 0 成功, -1 失败
 int parse_packet_file(const char *filename, FontInfo **fonts, uint8_t *font_count,
                       TextInfo **texts, uint8_t *text_count);
-
+#endif
+int parse_packet_file_lite(void *user_ptr,
+                      uint32_t (*read_cb)(void*, uint32_t, uint8_t*, uint32_t),
+                      FontInfo **fonts, uint8_t *font_count,
+                      TextInfo **texts, uint8_t *text_count);
 #endif // PARSER_H

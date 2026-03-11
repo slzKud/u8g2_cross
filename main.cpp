@@ -64,23 +64,27 @@ static uint32_t memory_font_read_cb(void *user_ptr, uint32_t offset, uint8_t *bu
     return count;
 }
 
-int main(void)
+int main(int argc,char** argv)
 {
   int x, y;
 
   int k;
   int i;
-  FILE *font_file;
+  FILE *font_file = NULL;
   FontInfo *fonts = NULL;
   uint8_t font_count = 0;
   TextInfo *texts = NULL;
   uint8_t text_count = 0;
-  if (parse_packet_file("./example_packets.bin", &fonts, &font_count, &texts, &text_count) != 0) {
-        fprintf(stderr, "Failed to parse file\n");
-        return 1;
+  if(argc>=2){
+    if (parse_packet_file(argv[1], &fonts, &font_count, &texts, &text_count) != 0) {
+          std::cout << "failed to parse file" << std::endl;
+          return 1;
+    }
+    //font_file = fopen("./myfont2_lite3.bin", "rb");
+    font_file = fopen(argv[1], "rb");
+  }else{
+    std::cout << "unable to load program,use example." << std::endl;
   }
-  //font_file = fopen("./myfont2_lite3.bin", "rb");
-  font_file = fopen("./example_packets.bin", "rb");
   #ifdef SDL2
   u8g2_SetupBuffer_SDL_128x64_4(&u8g2, &u8g2_cb_r0);
   #endif
@@ -104,7 +108,7 @@ int main(void)
   /* Demo: Using external font support */
   if(font_file!=NULL){
     std::cout << "Initializing external font..." << std::endl;
-    if(font_count>=0){
+    if(font_count>0){
       font_offset=fonts[0].offset+7;
       max_size=font_offset+fonts[0].count;
       if (u8g2_InitExternalFont(&u8g2, (void *)font_file, sd_card_read_cb)) {
@@ -133,19 +137,22 @@ int main(void)
     i = 0;
     do
     {
-      for (int i = 0; i < text_count; i++) {
-        if(text_count>0 && texts[i].style_font != current_font_index){
-          font_offset=fonts[(texts[i].style_font & 0xF)-1].offset+7;
-          max_size = font_offset+fonts[(texts[i].style_font & 0xF)-1].count;
-          current_font_index=(texts[i].style_font & 0xF);
-          u8g2_SetExternalFont(&u8g2, font_offset);
-          printf("current_font_index=%x,font_offset=%x,max_size=%x\n",current_font_index,font_offset,max_size);
+      if(text_count>0){
+        for (int i = 0; i < text_count; i++) {
+          if(text_count>0 && texts[i].style_font != current_font_index){
+            font_offset=fonts[(texts[i].style_font & 0xF)-1].offset+7;
+            max_size = font_offset+fonts[(texts[i].style_font & 0xF)-1].count;
+            current_font_index=(texts[i].style_font & 0xF);
+            u8g2_SetExternalFont(&u8g2, font_offset);
+            printf("current_font_index=%x,font_offset=%x,max_size=%x\n",current_font_index,font_offset,max_size);
+          }
+          u8g2_DrawUTF8(&u8g2, texts[i].x, texts[i].y, texts[i].text);
         }
-        u8g2_DrawUTF8(&u8g2, texts[i].x, texts[i].y, texts[i].text);
+        //u8g2_DrawUTF8(&u8g2, 2, 28, "你好, u8g2!");
+        i++;
+      }else{
+        u8g2_DrawUTF8(&u8g2, 2, 28, "Example Program");
       }
-      //u8g2_DrawUTF8(&u8g2, 2, 28, "你好, u8g2!");
-      i++;
-
     } while (u8g2_NextPage(&u8g2));
     #ifdef SDL2
     do
